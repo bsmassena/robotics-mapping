@@ -256,12 +256,41 @@ void Robot::mappingWithHIMMUsingLaser()
     float lambda_r = 0.2; //  20 cm
     float lambda_phi = 1.0;  // 1 degree
 
-    // TODO: update cells in the sensors' field-of-view
-    // Follow the example in mappingWithLogOddsUsingLaser()
+    int scale = grid->getMapScale();
+    float maxRange = base.getMaxLaserRange();
+    int maxRangeInt = maxRange*scale;
 
+    int robotX=currentPose_.x*scale;
+    int robotY=currentPose_.y*scale;
+    float robotAngle = currentPose_.theta;
 
+    for(int cellX = robotX - maxRangeInt; cellX <= robotX + maxRangeInt; cellX++) {
+        for(int cellY = robotY - maxRangeInt; cellY <= robotY + maxRangeInt; cellY++) {
+            Cell* cell = grid->getCell(cellX, cellY);
 
+            float r = sqrt(pow(cellX - robotX, 2) + pow(cellY - robotY, 2)) / scale;
+            float phi = normalizeAngleDEG(RAD2DEG(atan2(cellY - robotY, cellX - robotX)) - robotAngle);
+            int k = base.getNearestLaserBeam(phi);
 
+            if((fabs(phi - base.getAngleOfLaserBeam(k)) > lambda_phi / 2) ||
+            (r > std::min(maxRange, base.getKthLaserReading(k)))) {
+                continue;
+            }
+
+            if((base.getKthLaserReading(k) < maxRange) &&
+                (fabs(r - base.getKthLaserReading(k)) < lambda_r / 2)) {
+                cell->himm += 3;
+                cell->himm = std::min(cell->himm, 15);
+                continue;
+            }
+
+            if(r <= base.getKthLaserReading(k)) {
+                cell->himm -= 1;
+                cell->himm = std::max(cell->himm, 0);
+                continue;
+            }
+        }
+    }
 }
 
 /////////////////////////////////////////////////////
