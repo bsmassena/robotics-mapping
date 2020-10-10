@@ -198,45 +198,64 @@ float Robot::getLogOddsFromOccupancy(float occupancy)
     return log(occupancy/(1.0-occupancy));
 }
 
-void Robot::mappingWithLogOddsUsingLaser()
-{
-    float lambda_r = 0.1; //  10 cm
-    float lambda_phi = 1.0;  // 1 degree
+double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, float robotAngle) {
+    double r = sqrt(pow(xCell - xRobot, 2) + pow(yCell - yRobot, 2));
+    double pi = 2 * acos(0.0);
+    double robotToCellAngle = normalizeAngleDEG(atan2(yCell - yRobot, xCell - xRobot) * 180 / pi) - robotAngle;
+    float nearestBeam = base.getNearestLaserBeam(robotToCellAngle);
+    float maxLaserRange = base.getMaxLaserRange();
+    float obstacleThickness = 0.1;
+    float sensorOpeningAngle = 1.0;
+    if (r > std::min(maxLaserRange, nearestBeam + obstacleThickness / 2) || fabs(robotAngle - nearestBeam) > sensorOpeningAngle / 2)
+    {
+        return 0.5;
+    }
+    if ((nearestBeam < maxLaserRange) && fabs(r - nearestBeam) > sensorOpeningAngle / 2)
+    {
+        return 0.9;
+    }
+    return 0.1;
+}
+
+void Robot::mappingWithLogOddsUsingLaser(){
+    float lambda_r = 0.1;   //  10 cm
+    float lambda_phi = 1.0; // 1 degree
 
     int scale = grid->getMapScale();
     float maxRange = base.getMaxLaserRange();
-    int maxRangeInt = maxRange*scale;
+    int maxRangeInt = maxRange * scale;
 
-    int robotX=currentPose_.x*scale;
-    int robotY=currentPose_.y*scale;
+    int robotX = currentPose_.x * scale;
+    int robotY = currentPose_.y * scale;
     float robotAngle = currentPose_.theta;
 
     // how to access a grid cell:
-//    Cell* c=grid->getCell(robotX,robotY);
+    //    Cell* c=grid->getCell(robotX,robotY);
 
     // access log-odds value of variable in c->logodds
     // how to convert logodds to occupancy values:
-//    c->occupancy = getOccupancyFromLogOdds(c->logodds);
-
-    // TODO: define fixed values of occupancy
+    //    c->occupancy = getOccupancyFromLogOdds(c->logodds);
     float locc, lfree;
 
-
-
-    // TODO: update cells in the sensors' field-of-view
-    // ============================================================================
-    // you only need to check the cells at most maxRangeInt from the robot position
-    // that is, in the following square region:
-    //
-    //  (robotX-maxRangeInt,robotY+maxRangeInt)  -------  (robotX+maxRangeInt,robotY+maxRangeInt)
-    //                     |                       \                         |
-    //                     |                        \                        |
-    //                     |                         \                       |
-    //  (robotX-maxRangeInt,robotY-maxRangeInt)  -------  (robotX+maxRangeInt,robotY-maxRangeInt)
-
-
-
-
+    float maxLaserRange = base.getMaxLaserRange();
+    int initRow = std::max(0, (int)floor(robotY - maxLaserRange));
+    int finishRow = std::min((int)grid->getMapWidth(), (int)ceil(robotY + maxLaserRange));
+    int initColumn = std::max(0, (int)floor(robotX - maxLaserRange));
+    int finishColumn = std::min((int)grid->getMapWidth(), (int)ceil(robotX + maxLaserRange));
+    std::cout << " Row:  ";
+    for (int row = initRow; row <= finishRow; row++)
+    {
+        for (int column = initColumn; column <= finishColumn; column++)
+        {
+            Cell *cell = grid->getCell(column, row);
+            double r = sqrt(pow(cell->x - robotX, 2) + pow(cell->y - robotY, 2));
+            if (r < maxLaserRange)
+            {
+                float oldValue = getLogOddsFromOccupancy(cell->occupancy);
+                float newValue = oldValue + inverseSensorModel(cell->x, cell->y, robotX, robotY, robotAngle);
+            }
+        }
+    }
 }
 
 void Robot::mappingUsingSonar()
