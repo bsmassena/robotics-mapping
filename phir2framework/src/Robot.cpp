@@ -201,7 +201,7 @@ float Robot::getLogOddsFromOccupancy(float occupancy)
 double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, float robotAngle) {
     double r = sqrt(pow(xCell - xRobot, 2) + pow(yCell - yRobot, 2));
     double pi = 2 * acos(0.0);
-    double robotToCellAngle = (atan2(yCell - yRobot, xCell - xRobot) * 180 / pi) - normalizeAngleDEG(robotAngle);
+    double robotToCellAngle = normalizeAngleDEG((atan2(yCell - yRobot, xCell - xRobot) * 180 / pi) - robotAngle);
     int nearestBeam = base.getNearestLaserBeam(robotToCellAngle);
     float nearestBeamDistance = base.getMinLaserValueInRange(nearestBeam, nearestBeam);
     float maxLaserRange = base.getMaxLaserRange() * grid->getMapScale();
