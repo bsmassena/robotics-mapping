@@ -282,7 +282,8 @@ void Robot::mappingUsingSonar()
             float occUpdate;
             float R = maxRange;
             float alpha = fabs(phi - base.getAngleOfSonarBeam(k));
-            float beta = lambda_r / 2;
+            float beta = lambda_phi / 2;
+            float occUpdateMainTerm = (((R-r)/R) + ((beta-alpha)/beta))/2;
 
             // If sonar not in direction
             if (fabs(phi - base.getAngleOfSonarBeam(k)) > lambda_phi / 2) {
@@ -291,10 +292,10 @@ void Robot::mappingUsingSonar()
 
             // if in region 1
             if ((base.getKthSonarReading(k) < maxRange) &&
-                (fabs(r - base.getKthSonarReading(k)) < beta)) {
-                occUpdate = 1.0 - (((R - r) / R + (beta - alpha) / beta) / 2);
+                (fabs(r - base.getKthSonarReading(k)) < lambda_r / 2)) {
+                occUpdate = 0.5 * occUpdateMainTerm + 0.5;
             } else if (r <= base.getKthSonarReading(k)) { // if in region 2
-                occUpdate = 0.9 * ((((R - r) / R) + ((beta - alpha) / beta)) / 2);
+                occUpdate = 0.5 * (1 - occUpdateMainTerm);
             }
             else {
                 continue;
@@ -302,6 +303,9 @@ void Robot::mappingUsingSonar()
 
             cell->occupancySonar = (occUpdate * cell->occupancySonar) /
                                     ((occUpdate * cell->occupancySonar) + ((1.0 - occUpdate) * (1.0 - cell->occupancySonar)));
+
+            if(cell->occupancySonar > 0.99) cell->occupancySonar = 0.99;
+            if(cell->occupancySonar < 0.01) cell->occupancySonar = 0.01;
         }
     }
 }
