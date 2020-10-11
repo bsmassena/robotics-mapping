@@ -207,7 +207,7 @@ double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, f
     float maxLaserRange = base.getMaxLaserRange() * grid->getMapScale();
     float obstacleThickness = 0.1;
     float sensorOpeningAngle = 1.0;
-    if (r > std::min(maxLaserRange, nearestBeamDistance + obstacleThickness / 2) || fabs(robotAngle - nearestBeam) > sensorOpeningAngle / 2)
+    if (r > std::min(maxLaserRange, nearestBeamDistance + obstacleThickness / 2) || fabs(robotAngle - base.getAngleOfLaserBeam(nearestBeam)) > sensorOpeningAngle / 2)
     {
         return 0.5;
     }
