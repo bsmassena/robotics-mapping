@@ -265,8 +265,50 @@ void Robot::mappingUsingSonar()
     // TODO: update cells in the sensors' field-of-view
     // Follow the example in mappingWithLogOddsUsingLaser()
 
+    int scale = grid->getMapScale();
+    float maxRange = base.getMaxSonarRange();
+    int maxRangeInt = maxRange * scale;
 
+    int robotX = currentPose_.x * scale;
+    int robotY = currentPose_.y * scale;
+    float robotAngle = currentPose_.theta;
 
+    for (int cellX = robotX - maxRangeInt; cellX <= robotX + maxRangeInt; cellX++) {
+        for (int cellY = robotY - maxRangeInt; cellY <= robotY + maxRangeInt; cellY++) {
+            Cell *cell = grid->getCell(cellX, cellY);
+            float r = sqrt(pow(cellX - robotX, 2) + pow(cellY - robotY, 2)) / scale;
+            float phi = normalizeAngleDEG(RAD2DEG(atan2(cellY - robotY, cellX - robotX)) - robotAngle);
+            int k = base.getNearestSonarBeam(phi);
+            float occUpdate;
+            float scale = grid->getMapScale();
+            float R = maxRangeInt;
+            // TODO define alpha
+            // float alpha = 0.0;
+            float alpha = fabs(phi - base.getAngleOfSonarBeam(k));
+            float beta = lambda_r / 2;
+
+            // If sonar not in direction
+            if ((fabs(phi - base.getAngleOfSonarBeam(k)) > lambda_phi / 2) ||
+                (r > std::min(maxRange, base.getKthSonarReading(k)))) {
+                continue;
+            }
+
+            // if in region 1
+            // if (fabs(r - base.getKthSonarReading(k)) < beta) {
+            if ((base.getKthSonarReading(k) < maxRange) &&
+                (fabs(r - base.getKthSonarReading(k)) < beta)) {}
+                occUpdate = 0.5 * ((((R - r) / 2) + ((beta - alpha) / 2)) / 2) + 0.5;
+            } else if (r <= base.getKthSonarReading(k)) { // if in region 2
+                occUpdate = 0.5 * (1.0 - (((R - r) / R + (beta - alpha) / beta) / 2));
+            }
+            else {
+                continue;
+            }
+
+            cell->occupancySonar = (occUpdate * cell->occupancySonar) /
+                                    ((occUpdate * cell->occupancySonar) + ((1.0 - occUpdate) * (1.0 - cell->occupancySonar)));
+        }
+    }
 }
 
 void Robot::mappingWithHIMMUsingLaser()
