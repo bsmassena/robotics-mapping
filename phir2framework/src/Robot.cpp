@@ -218,7 +218,8 @@ double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, f
     return 0.1;
 }
 
-void Robot::mappingWithLogOddsUsingLaser(){
+void Robot::mappingWithLogOddsUsingLaser()
+{
     float lambda_r = 0.1;   //  10 cm
     float lambda_phi = 1.0; // 1 degree
 
@@ -238,19 +239,11 @@ void Robot::mappingWithLogOddsUsingLaser(){
     //    c->occupancy = getOccupancyFromLogOdds(c->logodds);
     float locc, lfree;
 
-    float maxLaserRange = base.getMaxLaserRange();
-    int initRow = std::max(0, (int)floor(robotY - maxLaserRange));
-    int finishRow = std::min((int)grid->getMapWidth(), (int)ceil(robotY + maxLaserRange));
-    int initColumn = std::max(0, (int)floor(robotX - maxLaserRange));
-    int finishColumn = std::min((int)grid->getMapWidth(), (int)ceil(robotX + maxLaserRange));
-    for (int row = initRow; row <= finishRow; row++)
-    {
-        for (int column = initColumn; column <= finishColumn; column++)
-        {
-            Cell *cell = grid->getCell(column, row);
+    for (int cellX = robotX - maxRangeInt; cellX <= robotX + maxRangeInt; cellX++) {
+        for (int cellY = robotY - maxRangeInt; cellY <= robotY + maxRangeInt; cellY++) {
+            Cell *cell = grid->getCell(cellX, cellY);
             double r = sqrt(pow(cell->x - robotX, 2) + pow(cell->y - robotY, 2));
-            if (r < maxLaserRange)
-            {
+            if (r < maxRangeInt) {
                 float occupancyUpdate = inverseSensorModel(cell->x, cell->y, robotX, robotY, robotAngle);
                 cell->logodds += getLogOddsFromOccupancy(occupancyUpdate);
                 cell->occupancy = getOccupancyFromLogOdds(cell->logodds);
