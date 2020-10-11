@@ -242,7 +242,6 @@ void Robot::mappingWithLogOddsUsingLaser(){
     int finishRow = std::min((int)grid->getMapWidth(), (int)ceil(robotY + maxLaserRange));
     int initColumn = std::max(0, (int)floor(robotX - maxLaserRange));
     int finishColumn = std::min((int)grid->getMapWidth(), (int)ceil(robotX + maxLaserRange));
-    std::cout << " Row:  ";
     for (int row = initRow; row <= finishRow; row++)
     {
         for (int column = initColumn; column <= finishColumn; column++)
@@ -251,8 +250,9 @@ void Robot::mappingWithLogOddsUsingLaser(){
             double r = sqrt(pow(cell->x - robotX, 2) + pow(cell->y - robotY, 2));
             if (r < maxLaserRange)
             {
-                float oldValue = getLogOddsFromOccupancy(cell->occupancy);
-                float newValue = oldValue + inverseSensorModel(cell->x, cell->y, robotX, robotY, robotAngle);
+                float occupancyUpdate = inverseSensorModel(cell->x, cell->y, robotX, robotY, robotAngle);
+                cell->logodds += getLogOddsFromOccupancy(occupancyUpdate);
+                cell->occupancy = getOccupancyFromLogOdds(cell->logodds);
             }
         }
     }
