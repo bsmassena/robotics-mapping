@@ -204,14 +204,14 @@ double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, f
     double robotToCellAngle = (atan2(yCell - yRobot, xCell - xRobot) * 180 / pi) - normalizeAngleDEG(robotAngle);
     int nearestBeam = base.getNearestLaserBeam(robotToCellAngle);
     float nearestBeamDistance = base.getMinLaserValueInRange(nearestBeam, nearestBeam);
-    float maxLaserRange = base.getMaxLaserRange();
+    float maxLaserRange = base.getMaxLaserRange() * grid->getMapScale();
     float obstacleThickness = 0.1;
     float sensorOpeningAngle = 1.0;
     if (r > std::min(maxLaserRange, nearestBeamDistance + obstacleThickness / 2) || fabs(robotAngle - nearestBeam) > sensorOpeningAngle / 2)
     {
         return 0.5;
     }
-    if ((nearestBeamDistance < maxLaserRange) && fabs(r - nearestBeamDistance) > sensorOpeningAngle / 2)
+    if ((nearestBeamDistance < maxLaserRange) && fabs(r - nearestBeamDistance) > obstacleThickness / 2)
     {
         return 0.9;
     }
