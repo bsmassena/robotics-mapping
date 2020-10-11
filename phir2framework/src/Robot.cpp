@@ -280,26 +280,21 @@ void Robot::mappingUsingSonar()
             float phi = normalizeAngleDEG(RAD2DEG(atan2(cellY - robotY, cellX - robotX)) - robotAngle);
             int k = base.getNearestSonarBeam(phi);
             float occUpdate;
-            float scale = grid->getMapScale();
-            float R = maxRangeInt;
-            // TODO define alpha
-            // float alpha = 0.0;
+            float R = maxRange;
             float alpha = fabs(phi - base.getAngleOfSonarBeam(k));
             float beta = lambda_r / 2;
 
             // If sonar not in direction
-            if ((fabs(phi - base.getAngleOfSonarBeam(k)) > lambda_phi / 2) ||
-                (r > std::min(maxRange, base.getKthSonarReading(k)))) {
+            if (fabs(phi - base.getAngleOfSonarBeam(k)) > lambda_phi / 2) {
                 continue;
             }
 
             // if in region 1
-            // if (fabs(r - base.getKthSonarReading(k)) < beta) {
             if ((base.getKthSonarReading(k) < maxRange) &&
-                (fabs(r - base.getKthSonarReading(k)) < beta)) {}
-                occUpdate = 0.5 * ((((R - r) / 2) + ((beta - alpha) / 2)) / 2) + 0.5;
+                (fabs(r - base.getKthSonarReading(k)) < beta)) {
+                occUpdate = 1.0 - (((R - r) / R + (beta - alpha) / beta) / 2);
             } else if (r <= base.getKthSonarReading(k)) { // if in region 2
-                occUpdate = 0.5 * (1.0 - (((R - r) / R + (beta - alpha) / beta) / 2));
+                occUpdate = 0.9 * ((((R - r) / R) + ((beta - alpha) / beta)) / 2);
             }
             else {
                 continue;
