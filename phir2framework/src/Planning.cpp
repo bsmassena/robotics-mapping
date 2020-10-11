@@ -109,9 +109,11 @@ void Planning::updateCellsTypes()
     // c->planType = FRONTIER
     // c->planType = DANGER
 
-
-
-
-
+    for (int cellX = gridLimits.minX; cellX <= gridLimits.maxX; cellX++) {
+        for (int cellY = gridLimits.minY; cellY <= gridLimits.maxY; cellY++) {
+            Cell *cell = grid->getCell(cellX, cellY);
+            cell->occType = FREE;
+        }
+    }
 }
 
