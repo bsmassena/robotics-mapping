@@ -199,23 +199,28 @@ float Robot::getLogOddsFromOccupancy(float occupancy)
 }
 
 double Robot::inverseSensorModel(int xCell, int yCell, int xRobot, int yRobot, float robotAngle) {
-    double r = sqrt(pow(xCell - xRobot, 2) + pow(yCell - yRobot, 2));
-    double pi = 2 * acos(0.0);
-    double robotToCellAngle = normalizeAngleDEG((atan2(yCell - yRobot, xCell - xRobot) * 180 / pi) - robotAngle);
-    int nearestBeam = base.getNearestLaserBeam(robotToCellAngle);
-    float nearestBeamDistance = base.getMinLaserValueInRange(nearestBeam, nearestBeam);
-    float maxLaserRange = base.getMaxLaserRange() * grid->getMapScale();
-    float obstacleThickness = 0.1;
-    float sensorOpeningAngle = 1.0;
-    if (r > std::min(maxLaserRange, nearestBeamDistance + obstacleThickness / 2) || fabs(robotAngle - base.getAngleOfLaserBeam(nearestBeam)) > sensorOpeningAngle / 2)
-    {
+    float lambda_r = 0.1;   //  10 cm
+    float lambda_phi = 1.0; // 1 degree
+    int scale = grid->getMapScale();
+    float maxRange = base.getMaxLaserRange();
+    int maxRangeInt = maxRange * scale;
+    float r = sqrt(pow(xCell - xRobot, 2) + pow(yCell - yRobot, 2)) / scale;
+    float phi = normalizeAngleDEG(RAD2DEG(atan2(yCell - yRobot, xCell - xRobot)) - robotAngle);
+    int k = base.getNearestLaserBeam(phi);
+
+    if ((fabs(phi - base.getAngleOfLaserBeam(k)) > lambda_phi / 2) ||
+        (r > std::min(maxRange, base.getKthLaserReading(k)))) {
         return 0.5;
     }
-    if ((nearestBeamDistance < maxLaserRange) && fabs(r - nearestBeamDistance) > obstacleThickness / 2)
-    {
+
+    if ((base.getKthLaserReading(k) < maxRange) &&
+        (fabs(r - base.getKthLaserReading(k)) < lambda_r / 2)) {
         return 0.9;
     }
-    return 0.1;
+
+    if (r <= base.getKthLaserReading(k)) {
+        return 0.1;
+    }
 }
 
 void Robot::mappingWithLogOddsUsingLaser()
